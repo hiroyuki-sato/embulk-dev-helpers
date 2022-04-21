@@ -1,0 +1,49 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+require 'yaml'
+require_relative '../lib/embulk_dev_helpers'
+
+CONF = YAML.load(File.read(File.expand_path("../../conf.yml",__FILE__)))
+
+opt = OptionParser.new
+
+include EmbulkDevHelpers
+
+embulk_ver = nil
+jruby_ver = nil
+opt.on("-e","--embulk=VER"){ |v| embulk_ver = v }
+opt.on("-j","--jruby=VER"){ |v| jruby_ver = v }
+
+opt.parse!(ARGV)
+
+
+embulk_ver = CONF['embulk'].first unless embulk_ver
+jruby_ver  = CONF['jruby'].first  unless jruby_ver
+
+=begin
+p embulk_path(embulk_ver)
+p embulk_home_path(jruby_ver,embulk_ver)
+p jruby_path(jruby_ver)
+=end
+
+home = embulk_home_path(jruby_ver,embulk_ver)
+jruby = jruby_path(jruby_ver)
+embulk = embulk_path(embulk_ver)
+
+
+cmd = <<EOS
+  java -jar #{embulk} -X embulk_home=#{home} -X jruby=file://#{jruby} #{ARGV.join(" ")}
+EOS
+
+print <<EOS
+#####################################################
+#
+# Embulk: #{embulk}
+# JRuby: #{jruby}
+# EmbulkHome: #{home}
+# CMD: #{ARGV.join(" ")}
+#
+#####################################################
+EOS
+system cmd
